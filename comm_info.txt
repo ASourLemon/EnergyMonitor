@@ -1,0 +1,37 @@
+
+==========================================
+::comm
+
+Em 26/11/2012 desenvolvi um módulo (na minha arq. de sw domobus para avr)
+para testar comunicação série com PC
+
+Defini um formato de trama em que o 1. caracter indica quantos se seguem.
+Porque estava a ser usado o CuteCom e só permitia enviar caracteres ascii
+adoptei que o número de caracteres da trama estivesse em ascii.
+exemplos de tramas: 3abc  5cinco  A12345678901
+Para determinar o número de caracteres da trama uso: 1ºcaracter - '0'
+
+Para meu espanto, pois tudo foi feito numa tarde, foi possível implementar
+essa comunic. e mostrou ser estranhamente robusta.
+Mesmo com 0qqcoisa  (0 caracteres)  e outras situações, mostrou funcionar
+sem "rebentar". Notar que procurei ser cuidadoso mas não tinha previsto
+enviar trama e indicar que tem 0 bytes (assumi que tinha sempre, no mínimo,
+de ter 2 bytes: 1 com o número de bytes e 1 byte útil; se não, por quê enviar
+uma trama sem conteúdo?...)
+
+Ver source_code_AI_v1.zip
+ficheiros comm.c e comm.h
+Foi definido 9600 baud, 8 bits dados, sem bit paridade e 1 stop bit
+
+A versão de teste feita, espera receber algo e, se válido, envia o que recebeu
+para o PC.
+
+==============================
+
+::CuteCom
+  Sw linux que permite receber da porta série e enviar para lá.
+
+  no linux parece ser simples usar porta série. procurar exemplos
+ Ver termios.h   /usr/include/
+
+.

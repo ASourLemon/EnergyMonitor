@@ -1,0 +1,13 @@
+
+A makefile é para a versão duemilanove (procurar no fich e mudar
+para uno).
+
+Eventualmente pode haver versão da makefile mais recente.
+
+
+O programador usado é o AVRDUDE (transfere prog para o Arduino)
+Há diferenças entre a versão "duemilanove" (mais antiga) e "uno".
+Notar que em 2013 já existe a release 3 do modelo UNO.
+
+
+.
