@@ -1,13 +1,8 @@
-/* Ficheiro: v_types.h **/
+/* Author: Renato Jorge Caleira Nunes */
 
-/* Contém declarações de tipos de variáveis que são usados nos vários módulos. */
-
-/* Autor: Renato Jorge Caleira Nunes */
-
-/*  Historial:
-20/08/2010 - Criação deste ficheiro.
-*/ /* ::hist */
-
+/* This file contains the declarations of the variable types
+   that are used in the several modules of this project. 
+*/
 
 #define uint8   unsigned char
 #define uint16  unsigned short int
@@ -17,7 +12,4 @@
 #define int16  short int
 #define int32  long int
 
-
-/* Fim do ficheiro v_types.h **/
-/* Autor: Renato Jorge Caleira Nunes */
 
