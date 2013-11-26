@@ -49,7 +49,7 @@ int serialport_read(int fd, unsigned char* packet)
 		}
 	}
 			 
-	memcpy(packet, packet_aux, MAX_PACKET_SIZE);
+	memcpy(packet, packet_aux, i);
 	return 0;
 }
 
