@@ -13,25 +13,39 @@
 #define TIMEOUT_WRITE 10000 //in uSec
 #define TIMEOUT_READ 10000
 #define MAX_PACKET_SIZE 20 //in bytes
-#define SERIAL_PORT_DEVICE "/dev/ttyUSB1"
+#define SERIAL_PORT_DEVICE "/dev/ttyUSB0"
 
 
 
-int serialport_read(int fd, char* packet)
+int serialport_read(int fd, unsigned char* packet)
 {
 	int n = -1;
-	int bytes_remaining; 
+	char bytes_remaining[1];
+	int i; 
 	int packet_index = 0;
-	char packet_aux[MAX_PACKET_SIZE] = "00000000000000000000";
+	unsigned char packet_aux[MAX_PACKET_SIZE] = "00000000000000000000";
 	while(n<=0) {
-		n = read(fd, &packet_aux, MAX_PACKET_SIZE);
+		n = read(fd, &bytes_remaining, 1);
+		i = atoi(bytes_remaining);
+		if(n==1)
+			break;
 		if(n<=0) {
 			usleep(10000);
 			continue;
 		}
+	}
+
+	printf("REMAIN:%d\n", i);
+	while(n<=0) {
+		n = read(fd, &packet_aux, i);
+		if(n<=0) {
+			usleep(10000);
+			continue;
+		} else {
+			printf("Read:%d\n", n);
+		}
 	} 
-	//printf("%d\n", packet_aux[0]);
-	memcpy(packet, packet_aux, MAX_PACKET_SIZE);
+	memcpy(packet, packet_aux, i);
 	return 0;
 }
 
@@ -128,8 +142,9 @@ int serialport_init(const char* serialport, int baud)
 int main(int argc, char *argv[])
 {
 	int fd = 0;
-	char rx_packet[MAX_PACKET_SIZE];
-	char tx_packet[MAX_PACKET_SIZE];
+	int a;
+	unsigned char rx_packet[MAX_PACKET_SIZE];
+	unsigned char tx_packet[MAX_PACKET_SIZE];
 
 	fd = serialport_init(SERIAL_PORT_DEVICE, BAUD_RATE);
 	if(fd==-1) {
@@ -138,19 +153,39 @@ int main(int argc, char *argv[])
 
 	while (1) {
 		memset(tx_packet, 0, sizeof(tx_packet));
-		memset(rx_packet, 0, sizeof(rx_packet));
+		memset(rx_packet, 1, sizeof(rx_packet));
 		printf("Please, enter a command:\n");
 		scanf("%s", &tx_packet);
 
 		serialport_write(fd, tx_packet);
 		serialport_read(fd, rx_packet);
-		printf("%d\n", rx_packet[0]-'0');
+		//printf("%d\n", rx_packet[1]);
+		/*
 		if(rx_packet[1] == '1')
 			printf("Command succefully done!\n");
 		else if(rx_packet[1] == '0')
-			printf("Error while executing command                                             \n");
-		else
-			printf("What?: %c\n", rx_packet[1]);
+			printf("Error while executing command\n");
+		else {
+			printf("What?:");
+			for(a=0; a < 20; ++a)
+				printf("%u ", rx_packet[a]); 
+			printf("\n");
+		}*/
+		for(a=0; a < 20; ++a)
+			printf("%u ", rx_packet[a]); 
+		printf("\n");
+		unsigned long int value = 0;
+		unsigned int* p = (unsigned int*) &value;
+		p[0] = rx_packet[4];
+		p[1] = rx_packet[3];
+		p[2] = rx_packet[2];
+		p[3] = rx_packet[1];
+		printf("Value: %lu", value);
+
+
+
+
+		
 
 	}
 } // end main

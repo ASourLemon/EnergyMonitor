@@ -55,25 +55,17 @@ void comm_task(){
       {	
 	// Condition that verifies if there are data to receive
 	if(COMM_timer > 200 && comm_rx_flags == 1){ 
-		uint8 res = dispatch(comm_rx_buffer[1], comm_rx_buffer[2]-'0');
-		comm_tx_buffer[0] = '1' -'0';
-		comm_tx_buffer[1] = res;                                  
+		memset(tx_packet, 0, sizeof(tx_packet));
+		dispatch(comm_rx_buffer[1], comm_rx_buffer[2]-'0', &tx_packet);
+			
+		for(aux_int = 0;aux_int<TX_PACKET_MAX_SIZE;++aux_int) 
+		  comm_tx_buffer[aux_int] = tx_packet[aux_int];
+		  
 		aux_char = comm_tx_buffer[0]+1;
 
-
-	  /*
-	  aux_char = comm_rx_buffer[0]+1; // increases the variable to match with the Domobus array specification
-	  comm_buffer_index = 0;
-	  for( ; aux_char > 0; aux_char--){
-	    comm_tx_buffer[comm_buffer_index] = comm_rx_buffer[comm_buffer_index];
-	    comm_buffer_index++;
-	  }
-		*/
-
-
-	  comm_rx_flags = 0;
-	  comm_tx_flags = 1;
-	  break;
+		comm_rx_flags = 0;
+		comm_tx_flags = 1;
+		break;
 	}
 	// Condition that verifies if there are data to be transmitted
 	if(comm_tx_flags == 1){
