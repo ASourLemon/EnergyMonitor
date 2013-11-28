@@ -27,26 +27,6 @@ double phase_shifted_voltage;
 
 double sq_voltage, sum_voltage, sq_current, sum_current, inst_phase, sum_phase; // sq = squared, sum = summation, inst = instataneous, P = phase 
 
-void init_ADC()
-{
-  // Select Vref=AVcc
-  ADMUX |= (1<<REFS0);
-  //set prescaller to 128 and enable ADC 
-  ADCSRA |= (1<<ADPS2)|(1<<ADPS1)|(1<<ADPS0)|(1<<ADEN);    
-}
-
-uint16_t read_ADC(uint8_t _channel)
-{
-  //select ADC channel with safety mask
-  ADMUX = (ADMUX & 0xF0) | (ADCchannel & 0x0F);
-  //single conversion mode
-  ADCSRA |= (1<<ADSC);
-  // wait until ADC conversion is complete
-  while( ADCSRA & (1<<ADSC) );
-  return ADC;
-}
-
-
 void voltage(int _in_pin_voltage, double _voltage_calibration, double _phase_calibration){
   in_pin_voltage = _in_pin_voltage;
   voltage_calibration = _voltage_calibration;
