@@ -18,6 +18,7 @@
 #include "time.h"
 #include "sys0.h"
 #include "comm.h"
+#include "reader.h"
 
 /* avr_init() : Function responsible to setup the AVR microcontroller.*/
 void avr_init(void)
@@ -67,6 +68,8 @@ int main()
 	SYS0_init();
 	SYS0_led_num_pulses(3);
  	comm_init();
+        energy_init();
+        init_ADC();
 
 	while(1)
 	{

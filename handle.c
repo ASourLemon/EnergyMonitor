@@ -1,8 +1,4 @@
 #include "handle.h"
-#include "comm.h"
-#include "v_types.h"
-#include "time.h"
-#include <Arduino.h>
 
 #define ENERGY_STATE_IDLE 0
 #define ENERGY_STATE_RX 1
@@ -24,6 +20,16 @@ uint8 ack_message[] = {'3'-'0', '1', '1', '1'};
 uint8 energy_state = ENERGY_STATE_IDLE;
 
 uint8 ENERGY_timer = '5'-'0';
+
+
+void energy_init(){
+  
+  in_pin_voltage = 2;
+  in_pin_current = 1;
+  voltage_calibration = 220;
+  current_calibration = 111;
+  phase_calibration = 0;
+}
 
 
 void energy_task() {
@@ -53,7 +59,7 @@ void energy_task() {
 		case ENERGY_STATE_CALCULE: {
                         ack_message[3] = '1';
                         if(comm_send_message(ack_message)) {
-      			  double power = 185.7633;
+      			  double power = calculate_current_rms(10);
       			  int16 p_int=floor(power);
       			  int16 p_dec=floor((power-p_int)*NUM_DEC);
       			  int8* p_aux = (int8*)&p_int;

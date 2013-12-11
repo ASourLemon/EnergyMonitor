@@ -20,7 +20,6 @@
 #endif
 
 /* Specifics includes for this module */
-#define _TIME_TASK_
 #include "time.h"
 
 /* Includes the modules that uses 'timers' */

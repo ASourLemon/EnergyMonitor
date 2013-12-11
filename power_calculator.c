@@ -2,12 +2,12 @@
   Description: This module is responsible to measure and calculate
   the power comsumption from the data received through the ARDUINO board.
 */
-#include "monitor.h"
+#include "power_calculator.h"
 #include "node.h"
 #include "time.h"
   
 /* Global Variables */
-int16 in_pin_voltage, in_pin_current; // voltage and current pins
+int in_pin_voltage, in_pin_current; // voltage and current pins
 double voltage_calibration, current_calibration, phase_calibration; // calibrations coeficients
 
 /* Global Variables used in the power calculation procedure. */
@@ -53,14 +53,16 @@ long positive_supply_voltage(){
   result |= ADCH<<8;
   result = 1126400L / result;                     //1100mV*1024 ADC steps http://openenergymonitor.org/emon/node/1186
   return result;
+#endif
 }
 
 
-double calculate_current_rms(int NUMBER_OF_SAMPLE){
+
+double calculate_current_rms(int NUMBER_OF_SAMPLES){
 
   int SUPPLYVOLTAGE = positive_supply_voltage();	
-
-  for (int n = 0; n < NUMBER_OF_SAMPLES; n++)
+  int n;
+  for (n = 0; n < NUMBER_OF_SAMPLES; n++)
     {
       last_sample_current  = sample_current;
       sample_current = analogRead(in_pin_current);
