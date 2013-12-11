@@ -2,6 +2,7 @@
 #include "node.h"
 #include "time.h"
 #include "v_types.h"
+#include <Arduino.h>
 
 /* Global includes from the WinAVR compiler */
 #if ! _SIMUL_
@@ -42,6 +43,33 @@ uint8 comm_tx_buffer[COMM_TX_BUF_MAX_SIZE];
 uint8 comm_rx_flags;
 uint8 comm_tx_flags;
 
+
+/* comm_get_message(2) : Function responsible of delivering packets to modules
+ * module_id : id of the module that is asking for the data
+ * packet : buffer to receive data, if it is available
+ */
+int comm_get_message(int module_id, uint8* packet){
+	if(comm_rx_flags && !comm_tx_flags) {
+                if(comm_rx_buffer[1] == module_id) {
+                  memcpy(packet, comm_rx_buffer, COMM_RX_BUF_MAX_SIZE);
+                  comm_rx_flags = 0;
+  		  return 1; 
+                }
+	}
+	return 0;
+}
+
+int comm_send_message(uint8* packet){
+	if(!comm_tx_flags) {
+          comm_tx_flags = 1;
+	  memcpy(comm_tx_buffer, packet, COMM_TX_BUF_MAX_SIZE);    
+          aux_char = comm_tx_buffer[0]+1;
+          return 1;
+	}
+	return 0;
+}
+
+
 /* comm_task() : Function responsible to manage the communication between the hardware and the serial port. 
    
    - This routine uses the following macros from AVR Lib :
@@ -55,16 +83,8 @@ void comm_task(){
       {	
 	// Condition that verifies if there are data to receive
 	if(COMM_timer > 200 && comm_rx_flags == 1){ 
-		memset(tx_packet, 0, sizeof(tx_packet));
-		dispatch(comm_rx_buffer[1], comm_rx_buffer[2]-'0', &tx_packet);
-			
-		for(aux_int = 0;aux_int<TX_PACKET_MAX_SIZE;++aux_int) 
-		  comm_tx_buffer[aux_int] = tx_packet[aux_int];
-		  
-		aux_char = comm_tx_buffer[0]+1;
+		memset(comm_tx_buffer, 0, sizeof(comm_tx_buffer));
 
-		comm_rx_flags = 0;
-		comm_tx_flags = 1;
 		break;
 	}
 	// Condition that verifies if there are data to be transmitted
@@ -124,6 +144,8 @@ void comm_task(){
     }
       /* Case for reading data from the serial port */
     case COMM_STATE_RX: {
+         //digitalWrite(4,HIGH);
+         //digitalWrite(5,LOW);
       /* Condition that verifies if there is data available :
 	 - RXC0 (00x80) : bit to verify if the receive is complete
       */

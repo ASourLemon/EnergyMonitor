@@ -12,18 +12,24 @@
 #define TIMEOUT_WRITE 10000 //in uSec
 #define TIMEOUT_READ 10000
 #define MAX_PACKET_SIZE 20 //in bytes
-#define SERIAL_PORT_DEVICE "/dev/ttyUSB0"
+#define SERIAL_PORT_DEVICE "/dev/ttyUSB1"
+#define NUM_DEC 1000
 
+
+unsigned char rx_packet[MAX_PACKET_SIZE];
+unsigned char tx_packet[MAX_PACKET_SIZE];
+unsigned char ack_message[] = "40111";
 
 
 int serialport_read(int fd, unsigned char* packet)
 {
 	int n = -1;
-	char bytes_remaining[1];
+	unsigned char bytes_remaining[1];
 	int i = 1; 
 	int j, k;
 	int packet_index = 0;
 	unsigned char packet_aux[MAX_PACKET_SIZE] = "00000000000000000000";
+	
 	while(n<=0) {
 		n = read(fd, &bytes_remaining, 1);
 		i = atoi(bytes_remaining);
@@ -35,14 +41,12 @@ int serialport_read(int fd, unsigned char* packet)
 		}
 	}
 	n=-1;
-	printf("REMAN:%d\n", i);
 	while(n<=0 && i > 0) {
 	n = read(fd, &packet_aux[packet_index], 1);
 		if(n<=0) {
 			usleep(10000);
 			continue;
 		} else {
-			printf("Read:%d\n", n);
 			packet_index++;
 			n = -1;
 	      i--;
@@ -142,13 +146,31 @@ int serialport_init(const char* serialport, int baud)
 }
 
 
+void get_user_message(){
+	printf("Please, enter a command:\n");
+	scanf("%s", &tx_packet);
+}
+
+double get_double(char* bytes, int dec_num) {
+		double value = 0;
+		int p_int=0, p_dec=0;
+		char* p = (char*) &p_int;
+		p[0] = bytes[0];
+		p[1] = bytes[3];
+		p = (char*) &p_dec;
+		p[0] = bytes[4];
+		p[1] = bytes[5];
+		value = p_int + (1.0*p_dec/dec_num);
+		return value;
+}
 
 int main(int argc, char *argv[])
 {
 	int fd = 0;
 	int a;
-	unsigned char rx_packet[MAX_PACKET_SIZE];
-	unsigned char tx_packet[MAX_PACKET_SIZE];
+	int err;
+	unsigned char op_code;
+	unsigned char target_id;
 
 	fd = serialport_init(SERIAL_PORT_DEVICE, BAUD_RATE);
 	if(fd==-1) {
@@ -156,46 +178,47 @@ int main(int argc, char *argv[])
 	}
 
 	while (1) {
+		err = 0;
 		memset(tx_packet, 0, sizeof(tx_packet));
 		memset(rx_packet, 0, sizeof(rx_packet));
-
-		printf("Please, enter a command:\n");
-		scanf("%s", &tx_packet);
-
+		get_user_message();
 		serialport_write(fd, tx_packet);
 		serialport_read(fd, rx_packet);
-		//printf("%d\n", rx_packet[1]);
-		/*
-		if(rx_packet[1] == '1')
-			printf("Command succefully done!\n");
-		else if(rx_packet[1] == '0')
-			printf("Error while executing command\n");
-		else {
-			printf("What?:");
-			for(a=0; a < 20; ++a)
-				printf("%u ", rx_packet[a]); 
-			printf("\n");
-		}*/
-		for(a=0; a < 20; ++a)
-			printf("%u ", rx_packet[a]); 
-		printf("\n");
-		/*											
-      unsigned long int dist = 4290000000;
-      unsigned char* l = (unsigned char*)&dist;
-		//printf("L[0]:%u\n", &l);		*/
 
-		unsigned long int value = 0;
-		unsigned char* p = (unsigned char*) &value;
-		p[0] = rx_packet[0];
-		p[1] = rx_packet[1];
-		p[2] = rx_packet[2];
-		p[3] = rx_packet[3];
-		printf("Value: %lu\n", value);
+		if(rx_packet[0] == '0') {
+			printf("Error in identificer\n");	
+			err = 1;
+		}
+		if(rx_packet[1] == '0') {
+			printf("Error in opcode\n");	
+			err = 1;
+		}
+		if(rx_packet[2] == '0') {
+			printf("Error in data\n");	
+			err = 1;
+		}
+		if(err)
+			continue;
+		printf("Ack received!\n");
 
+		serialport_read(fd, rx_packet);
 
+		double value = 0;
 
+		int p_int=0, p_dec=0;
+		char* p = (char*) &p_int;
+		p[0] = rx_packet[2];
+		p[1] = rx_packet[3];
+		p = (char*) &p_dec;
+		p[0] = rx_packet[4];
+		p[1] = rx_packet[5];
+		value = p_int + (1.0*p_dec/1000);
 
-		
+		printf("Value:%f\n", value);
+		sleep(2);
+		serialport_write(fd, ack_message);
+		printf("Ack sent!\n");
+
 
 	}
-} // end main
+}

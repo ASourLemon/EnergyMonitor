@@ -2,6 +2,7 @@
 
 /* Global Includes */
 #include "node.h"
+#include "handle.h"
 
 #if _SIMUL_
  #include "simul.h"
@@ -52,7 +53,7 @@ void avr_init(void)
 /* main() : Function that executes the main routine. Initialize the several
    modules and applications. After that enters in a Round-Robin sequential
    cycle that executes the different tasks and applications. */
- */
+
 int main()
 {
 	#if _SIMUL_
@@ -71,6 +72,7 @@ int main()
 	{
 		TIME_task();
 		comm_task();
+		energy_task();
 		SYS0_task();
 	}
 }

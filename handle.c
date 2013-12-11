@@ -1,46 +1,94 @@
 #include "handle.h"
+#include "comm.h"
+#include "v_types.h"
+#include "time.h"
+#include <Arduino.h>
+
+#define ENERGY_STATE_IDLE 0
+#define ENERGY_STATE_RX 1
+#define ENERGY_STATE_TX 2
+#define ENERGY_STATE_CALCULE 3
+#define ENERGY_STATE_ERR 4
+#define ENERGY_STATE_ACK 5
+
+#define MODULE_ID '0'
+#define PACKET_MAX_SIZE 20
+#define NUM_DEC 1000
+#define RE_SEND_TIMEOUT '5'
+
+#define CALC_POWER_OP 'C'
+
+uint8 rx_packet[PACKET_MAX_SIZE]; 
+uint8 tx_packet[PACKET_MAX_SIZE];
+uint8 ack_message[] = {'3'-'0', '1', '1', '1'};
+uint8 energy_state = ENERGY_STATE_IDLE;
+
+uint8 ENERGY_timer = '5'-'0';
 
 
-void high_led(int num_led){
-  digitalWrite(num_led, HIGH);
-}
+void energy_task() {
+	switch(energy_state) {
+  
+		case ENERGY_STATE_IDLE:{
+			if(comm_get_message(MODULE_ID, rx_packet)) {
+			  energy_state = ENERGY_STATE_RX;
+                        }
+			break;
+                }
+                
+		case ENERGY_STATE_RX: {
+                        uint8 op_code=rx_packet[2];
 
-void low_led(int num_led){
-  digitalWrite(num_led, LOW);
-}
+			if(op_code == CALC_POWER_OP) {
+                            ack_message[2] = '1';
+		            energy_state = ENERGY_STATE_CALCULE;
+                        }
+			else {
+                          ack_message[2] = '0';
+                          energy_state = ENERGY_STATE_ERR;
+                        }
+			break;
+		}
 
-uint8 read_distance(){
-  unsigned long pulseTime=0;
-  unsigned long distance=0;
-  digitalWrite(INIT_PIN, HIGH);
-  delayMicroseconds(10);
-  digitalWrite(INIT_PIN, LOW);
-  pulseTime = pulseIn(ECHO_PIN, HIGH, 0);
-  return pulseTime/58;
-}
+		case ENERGY_STATE_CALCULE: {
+                        ack_message[3] = '1';
+                        if(comm_send_message(ack_message)) {
+      			  double power = 185.7633;
+      			  int16 p_int=floor(power);
+      			  int16 p_dec=floor((power-p_int)*NUM_DEC);
+      			  int8* p_aux = (int8*)&p_int;
+      			  tx_packet[0] = '6' - '0';
+      			  tx_packet[1] = MODULE_ID;
+      			  tx_packet[2] = CALC_POWER_OP;
+  			  tx_packet[3] = p_aux[0];
+                          tx_packet[4] = p_aux[1];
+  			  p_aux = (int8*)&p_dec;
+                          tx_packet[5] = p_aux[0];
+                          tx_packet[6] = p_aux[1];
+                          energy_state = ENERGY_STATE_TX;
+                        }
+			break;
+		}
 
+		case ENERGY_STATE_TX: {
+			if(comm_send_message(tx_packet)) {
+                          energy_state = ENERGY_STATE_ACK;
+                        }
+			break;
+                }
+                
+                case ENERGY_STATE_ACK: {
+                    if(comm_get_message(MODULE_ID, rx_packet)) {
+                        energy_state = ENERGY_STATE_IDLE;
+                    }
+                  break;  
+                }
 
-uint8 dispatch(uint8 opcode, uint8 param, uint8* resp) {
-        uint8 tx_packet[TX_PACKET_MAX_SIZE];
-        memset(tx_packet, 0, sizeof(tx_packet));
-        if(opcode == 'H') {
-          high_led(param);
-          tx_packet[0] = '1' -'0';
-          tx_packet[1] = '1';
-        }
-        else if(opcode == 'L') {
-          low_led(param);
-          tx_packet[0] = '1' -'0';
-          tx_packet[1] = '1';
-        }
-        else if(opcode == 'R') {
-          tx_packet[0]='1';
-          tx_packet[1]=read_distance(); 
-        }
-        else {
-          tx_packet[0] = '1' -'0';
-          tx_packet[1] = '0';
-        }
-        memcpy(resp, tx_packet, TX_PACKET_MAX_SIZE);
-        return 1;
+		case ENERGY_STATE_ERR: {
+                        if(comm_send_message(ack_message))
+                          energy_state = ENERGY_STATE_IDLE;
+                        break;
+
+		}
+    }
 }
