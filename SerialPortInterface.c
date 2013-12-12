@@ -13,7 +13,10 @@
 #define TIMEOUT_WRITE 10000 //in uSec
 #define TIMEOUT_READ 10000
 #define MAX_PACKET_SIZE 20 //in bytes
-#define SERIAL_PORT_DEVICE "/dev/ttyUSB1"
+#define SERIAL_PORT_DEVICE0 "/dev/ttyUSB0"
+#define SERIAL_PORT_DEVICE1 "/dev/ttyUSB1"
+#define SERIAL_PORT_DEVICE2 "/dev/ttyUSB2"
+#define SERIAL_PORT_DEVICE3 "/dev/ttyUSB3"
 #define NUM_DEC 1000
 #define CALC_OP 'C'
 
@@ -76,7 +79,6 @@ int serialport_init(const char* serialport, int baud)
 
 	fd = open(serialport, O_RDWR | O_NOCTTY | O_NDELAY);
 	if (fd == -1)  {
-		perror("Unable to open serial port. Program will now exit. Bye bye!");
 		return -1;
 	}
 
@@ -171,7 +173,7 @@ void create_calc_packet(char id){
 
 int main(int argc, char *argv[])
 {
-	int fd = 0;
+	int fd = -1;
 	int option = 0;
 	int err;
 	unsigned char op_code;
@@ -183,9 +185,18 @@ int main(int argc, char *argv[])
 	int msgs = 0;
 	int id;
 	
-
-	fd = serialport_init(SERIAL_PORT_DEVICE, BAUD_RATE);
+	fd = serialport_init(SERIAL_PORT_DEVICE0, BAUD_RATE);
 	if(fd==-1) {
+		fd = serialport_init(SERIAL_PORT_DEVICE1, BAUD_RATE);
+	}
+	if(fd==-1) {
+		fd = serialport_init(SERIAL_PORT_DEVICE2, BAUD_RATE);
+	}
+	if(fd==-1) {
+		fd = serialport_init(SERIAL_PORT_DEVICE3, BAUD_RATE);
+	}
+	if(fd==-1){
+		perror("Unable to open serial port. Program will now exit. Bye bye!");
 		return -1;
 	}
 

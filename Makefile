@@ -597,8 +597,8 @@ $(OBJDIR)/%.o : %.S
 
 
 #Target: Interface
-interface: 
-	$(CC) -lm -o SerialInterface SerialInterface.c
+interface: SerialPortInterface
+	$(CC) -lm -o SerialPortInterface SerialPortInterface.c
 
 # Target: clean project.
 clean: begin clean_list end
