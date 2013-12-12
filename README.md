@@ -8,6 +8,6 @@ EnergyMonitor
     _  comm.c e comm.h, sys0.c e sys0.h, node.h, time.c e time.h, main.c, handle.c e handle.h, power_calculator.c 
        e power_calculator.h, reader.c e reader.h, e vtypes.h.
        
-2 - Compilar os restantes ficheiros utilizando o comando make e correr o executavel  interface gerado.
+2 - Compilar os restantes ficheiros utilizando o comando make e correr o executavel SerialPortInterface gerado.
 
 
