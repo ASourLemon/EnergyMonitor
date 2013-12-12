@@ -144,8 +144,6 @@ void comm_task(){
     }
       /* Case for reading data from the serial port */
     case COMM_STATE_RX: {
-         //digitalWrite(4,HIGH);
-         //digitalWrite(5,LOW);
       /* Condition that verifies if there is data available :
 	 - RXC0 (00x80) : bit to verify if the receive is complete
       */
