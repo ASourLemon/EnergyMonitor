@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <termios.h>
 #include <sys/ioctl.h>
+#include <string.h>
 
 #define BAUD_RATE B9600
 #define TIMEOUT_WRITE 10000 //in uSec
@@ -14,12 +15,10 @@
 #define MAX_PACKET_SIZE 20 //in bytes
 #define SERIAL_PORT_DEVICE "/dev/ttyUSB1"
 #define NUM_DEC 1000
-
+#define CALC_OP 'C'
 
 unsigned char rx_packet[MAX_PACKET_SIZE];
 unsigned char tx_packet[MAX_PACKET_SIZE];
-unsigned char ack_message[] = "40111";
-
 
 int serialport_read(int fd, unsigned char* packet)
 {
@@ -164,13 +163,26 @@ double get_double(char* bytes, int dec_num) {
 		return value;
 }
 
+void create_calc_packet(char id){
+	tx_packet[0] = '2';
+	tx_packet[1] = id ;
+	tx_packet[2] = CALC_OP;
+}
+
 int main(int argc, char *argv[])
 {
 	int fd = 0;
-	int a;
+	int option = 0;
 	int err;
 	unsigned char op_code;
 	unsigned char target_id;
+	char err_msg[200];	
+
+	unsigned char ack_message[] = "40111";
+	unsigned int state=0;	
+	int msgs = 0;
+	int id;
+	
 
 	fd = serialport_init(SERIAL_PORT_DEVICE, BAUD_RATE);
 	if(fd==-1) {
@@ -178,46 +190,98 @@ int main(int argc, char *argv[])
 	}
 
 	while (1) {
-		err = 0;
-		memset(tx_packet, 0, sizeof(tx_packet));
-		memset(rx_packet, 0, sizeof(rx_packet));
-		get_user_message();
-		serialport_write(fd, tx_packet);
-		serialport_read(fd, rx_packet);
+		switch(state) {
+			case -1: {
+				printf(err_msg);
+				state = 0;
+				break;
+			}
+	
+		   case 0: {
+				err = 0;
+				memset(tx_packet, 0, sizeof(tx_packet));
+				memset(rx_packet, 0, sizeof(rx_packet));
+				printf("\n");
+				printf("What would you like to do?\n");
+				printf("1-Send single message\n");
+				printf("2-Send raw message\n");
+				scanf("%d", &state);
+				if(state < 1 || state > 2) {
+					strcpy(err_msg, "Error: Invalid option\n\0");
+					state = -1;
+				}
 
-		if(rx_packet[0] == '0') {
-			printf("Error in identificer\n");	
-			err = 1;
+				if(state == 2)
+					state = 6;
+				break;
+			}
+
+			case 1: {
+				printf("Please, insert the id of the target module\n");
+				scanf("%d", &id);
+				create_calc_packet(id +'0');
+				state = 2;
+				break;
+			}
+
+			case 2: {
+				serialport_write(fd, tx_packet);
+				state = 5;
+				break;
+			}
+
+			case 3: {
+				serialport_read(fd, rx_packet);
+				double value = 0;
+				int p_int=0, p_dec=0;
+				char* p = (char*) &p_int;
+				p[0] = rx_packet[2];
+				p[1] = rx_packet[3];
+				p = (char*) &p_dec;
+				p[0] = rx_packet[4];
+				p[1] = rx_packet[5];
+				value = p_int + (1.0*p_dec/1000);
+				printf("Power value: %f\n", value);
+				state = 4;
+				break;
+
+			}
+
+			case 4: {
+				sleep(2);
+				serialport_write(fd, ack_message);
+				state = 0;
+				break;
+			}
+
+			case 5: {
+				serialport_read(fd, rx_packet);
+				if(rx_packet[0] == '0') {
+					printf("Error in identificer\n");	
+					err = 1;
+				}
+				if(rx_packet[1] == '0') {
+					printf("Error in opcode\n");	
+					err = 1;
+				}
+				if(rx_packet[2] == '0') {
+					printf("Error in data\n");	
+					err = 1;
+				}
+				if(err)
+					state = 0;
+				else
+					state = 3;
+				break;
+			}
+			case 6: {
+				printf("A raw message has the following: [N_BITS][MOD_ID][OP_COD][DATA]\n");
+				scanf("%s", &tx_packet);
+				state = 2;
+				break;
+			}
+	
 		}
-		if(rx_packet[1] == '0') {
-			printf("Error in opcode\n");	
-			err = 1;
-		}
-		if(rx_packet[2] == '0') {
-			printf("Error in data\n");	
-			err = 1;
-		}
-		if(err)
-			continue;
-		printf("Ack received!\n");
-
-		serialport_read(fd, rx_packet);
-
-		double value = 0;
-
-		int p_int=0, p_dec=0;
-		char* p = (char*) &p_int;
-		p[0] = rx_packet[2];
-		p[1] = rx_packet[3];
-		p = (char*) &p_dec;
-		p[0] = rx_packet[4];
-		p[1] = rx_packet[5];
-		value = p_int + (1.0*p_dec/1000);
-
-		printf("Value:%f\n", value);
-		sleep(2);
-		serialport_write(fd, ack_message);
-		printf("Ack sent!\n");
 
 
 	}

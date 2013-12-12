@@ -408,7 +408,7 @@ ALL_ASFLAGS = -mmcu=$(MCU) -I. -x assembler-with-cpp $(ASFLAGS)
 
 
 # Default target.
-all: begin gccversion sizebefore build sizeafter end
+all: begin gccversion sizebefore build sizeafter end interface
 
 # Change the build target to build a HEX file or a library.
 build: elf hex eep lss sym
@@ -595,6 +595,10 @@ $(OBJDIR)/%.o : %.S
 %.i : %.c
 	$(CC) -E -mmcu=$(MCU) -I. $(CFLAGS) $< -o $@ 
 
+
+#Target: Interface
+interface: 
+	$(CC) -lm -o SerialInterface SerialInterface.c
 
 # Target: clean project.
 clean: begin clean_list end
